@@ -10,6 +10,7 @@ import type {
 import type {
   AgentSummarySchema,
   AgentsFileEntrySchema,
+  AgentsWorkspaceEntrySchema,
   AgentsCreateParamsSchema,
   AgentsCreateResultSchema,
   AgentsDeleteParamsSchema,
@@ -20,6 +21,8 @@ import type {
   AgentsFilesListResultSchema,
   AgentsFilesSetParamsSchema,
   AgentsFilesSetResultSchema,
+  AgentsWorkspaceListParamsSchema,
+  AgentsWorkspaceListResultSchema,
   AgentsListParamsSchema,
   AgentsListResultSchema,
   AgentsUpdateParamsSchema,
@@ -200,6 +203,7 @@ export type WebLoginStartParams = Static<typeof WebLoginStartParamsSchema>;
 export type WebLoginWaitParams = Static<typeof WebLoginWaitParamsSchema>;
 export type AgentSummary = Static<typeof AgentSummarySchema>;
 export type AgentsFileEntry = Static<typeof AgentsFileEntrySchema>;
+export type AgentsWorkspaceEntry = Static<typeof AgentsWorkspaceEntrySchema>;
 export type AgentsCreateParams = Static<typeof AgentsCreateParamsSchema>;
 export type AgentsCreateResult = Static<typeof AgentsCreateResultSchema>;
 export type AgentsUpdateParams = Static<typeof AgentsUpdateParamsSchema>;
@@ -212,6 +216,8 @@ export type AgentsFilesGetParams = Static<typeof AgentsFilesGetParamsSchema>;
 export type AgentsFilesGetResult = Static<typeof AgentsFilesGetResultSchema>;
 export type AgentsFilesSetParams = Static<typeof AgentsFilesSetParamsSchema>;
 export type AgentsFilesSetResult = Static<typeof AgentsFilesSetResultSchema>;
+export type AgentsWorkspaceListParams = Static<typeof AgentsWorkspaceListParamsSchema>;
+export type AgentsWorkspaceListResult = Static<typeof AgentsWorkspaceListResultSchema>;
 export type AgentsListParams = Static<typeof AgentsListParamsSchema>;
 export type AgentsListResult = Static<typeof AgentsListResultSchema>;
 export type ModelChoice = Static<typeof ModelChoiceSchema>;

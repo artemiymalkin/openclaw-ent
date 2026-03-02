@@ -44,6 +44,7 @@ import {
   validateAgentsFilesSetParams,
   validateAgentsListParams,
   validateAgentsUpdateParams,
+  validateAgentsWorkspaceListParams,
 } from "../protocol/index.js";
 import { listAgentsForGateway } from "../session-utils.js";
 import type { GatewayRequestHandlers, RespondFn } from "./types.js";
@@ -113,6 +114,27 @@ type ResolvedAgentWorkspaceFilePath =
       requestPath: string;
       ioPath: string;
       workspaceReal: string;
+    }
+  | {
+      kind: "invalid";
+      requestPath: string;
+      reason: string;
+    };
+
+type ResolvedAgentWorkspaceDirPath =
+  | {
+      kind: "ready";
+      requestPath: string;
+      ioPath: string;
+      workspaceReal: string;
+      relativePath: string;
+    }
+  | {
+      kind: "missing";
+      requestPath: string;
+      ioPath: string;
+      workspaceReal: string;
+      relativePath: string;
     }
   | {
       kind: "invalid";
@@ -209,6 +231,96 @@ async function resolveAgentWorkspaceFilePath(params: {
   return { kind: "ready", requestPath, ioPath: targetReal, workspaceReal };
 }
 
+async function resolveAgentWorkspaceDirPath(params: {
+  workspaceDir: string;
+  name: string;
+  allowMissing: boolean;
+}): Promise<ResolvedAgentWorkspaceDirPath> {
+  const trimmed = params.name.trim();
+  const relativePath = trimmed && trimmed !== "." && trimmed !== "./" ? trimmed : "";
+  const requestPath = relativePath ? path.join(params.workspaceDir, relativePath) : params.workspaceDir;
+  const workspaceReal = await resolveWorkspaceRealPath(params.workspaceDir);
+  const candidatePath = relativePath ? path.resolve(workspaceReal, relativePath) : workspaceReal;
+
+  try {
+    await assertNoPathAliasEscape({
+      absolutePath: candidatePath,
+      rootPath: workspaceReal,
+      boundaryLabel: "workspace root",
+    });
+  } catch (error) {
+    return {
+      kind: "invalid",
+      requestPath,
+      reason: error instanceof Error ? error.message : "path escapes workspace root",
+    };
+  }
+
+  let candidateLstat: Awaited<ReturnType<typeof fs.lstat>>;
+  try {
+    candidateLstat = await fs.lstat(candidatePath);
+  } catch (err) {
+    if (isNotFoundPathError(err)) {
+      if (params.allowMissing) {
+        return { kind: "missing", requestPath, ioPath: candidatePath, workspaceReal, relativePath };
+      }
+      return { kind: "invalid", requestPath, reason: "directory not found" };
+    }
+    throw err;
+  }
+
+  if (candidateLstat.isSymbolicLink()) {
+    let targetReal: string;
+    try {
+      targetReal = await fs.realpath(candidatePath);
+    } catch (err) {
+      if (isNotFoundPathError(err)) {
+        if (params.allowMissing) {
+          return { kind: "missing", requestPath, ioPath: candidatePath, workspaceReal, relativePath };
+        }
+        return { kind: "invalid", requestPath, reason: "directory not found" };
+      }
+      throw err;
+    }
+    try {
+      await assertNoPathAliasEscape({
+        absolutePath: targetReal,
+        rootPath: workspaceReal,
+        boundaryLabel: "workspace root",
+      });
+    } catch (error) {
+      return {
+        kind: "invalid",
+        requestPath,
+        reason: error instanceof Error ? error.message : "path escapes workspace root",
+      };
+    }
+    let targetStat: Awaited<ReturnType<typeof fs.stat>>;
+    try {
+      targetStat = await fs.stat(targetReal);
+    } catch (err) {
+      if (isNotFoundPathError(err)) {
+        if (params.allowMissing) {
+          return { kind: "missing", requestPath, ioPath: targetReal, workspaceReal, relativePath };
+        }
+        return { kind: "invalid", requestPath, reason: "directory not found" };
+      }
+      throw err;
+    }
+    if (!targetStat.isDirectory()) {
+      return { kind: "invalid", requestPath, reason: "path is not a directory" };
+    }
+    return { kind: "ready", requestPath, ioPath: targetReal, workspaceReal, relativePath };
+  }
+
+  if (!candidateLstat.isDirectory()) {
+    return { kind: "invalid", requestPath, reason: "path is not a directory" };
+  }
+
+  const targetReal = await fs.realpath(candidatePath).catch(() => candidatePath);
+  return { kind: "ready", requestPath, ioPath: targetReal, workspaceReal, relativePath };
+}
+
 async function statFileSafely(filePath: string): Promise<FileMeta | null> {
   try {
     const [stat, lstat] = await Promise.all([fs.stat(filePath), fs.lstat(filePath)]);
@@ -228,6 +340,66 @@ async function statFileSafely(filePath: string): Promise<FileMeta | null> {
   } catch {
     return null;
   }
+}
+
+async function listWorkspaceEntries(params: {
+  workspaceDir: string;
+  resolvedDir: Extract<ResolvedAgentWorkspaceDirPath, { kind: "ready" }>;
+}): Promise<
+  Array<{
+    name: string;
+    relativePath: string;
+    path: string;
+    type: "file" | "directory";
+    size?: number;
+    updatedAtMs?: number;
+  }>
+> {
+  const entries = await fs.readdir(params.resolvedDir.ioPath, { withFileTypes: true });
+  const results: Array<{
+    name: string;
+    relativePath: string;
+    path: string;
+    type: "file" | "directory";
+    size?: number;
+    updatedAtMs?: number;
+  }> = [];
+  for (const entry of entries) {
+    const relativePath = params.resolvedDir.relativePath
+      ? path.join(params.resolvedDir.relativePath, entry.name)
+      : entry.name;
+    const requestPath = path.join(params.workspaceDir, relativePath);
+    if (entry.isDirectory()) {
+      results.push({
+        name: entry.name,
+        relativePath,
+        path: requestPath,
+        type: "directory",
+      });
+      continue;
+    }
+    const resolvedFile = await resolveAgentWorkspaceFilePath({
+      workspaceDir: params.workspaceDir,
+      name: relativePath,
+      allowMissing: false,
+    });
+    if (resolvedFile.kind !== "ready") {
+      continue;
+    }
+    const meta = await statFileSafely(resolvedFile.ioPath);
+    if (!meta) {
+      continue;
+    }
+    results.push({
+      name: entry.name,
+      relativePath,
+      path: requestPath,
+      type: "file",
+      size: meta.size,
+      updatedAtMs: meta.updatedAtMs,
+    });
+  }
+  return results;
 }
 
 async function listAgentFiles(workspaceDir: string, options?: { hideBootstrap?: boolean }) {
@@ -731,6 +903,88 @@ export const agentsHandlers: GatewayRequestHandlers = {
           updatedAtMs: meta?.updatedAtMs,
           content,
         },
+      },
+      undefined,
+    );
+  },
+  "agents.workspace.list": async ({ params, respond }) => {
+    if (!validateAgentsWorkspaceListParams(params)) {
+      respond(
+        false,
+        undefined,
+        errorShape(
+          ErrorCodes.INVALID_REQUEST,
+          `invalid agents.workspace.list params: ${formatValidationErrors(
+            validateAgentsWorkspaceListParams.errors,
+          )}`,
+        ),
+      );
+      return;
+    }
+    const cfg = loadConfig();
+    const agentId = resolveAgentIdOrError(String(params.agentId ?? ""), cfg);
+    if (!agentId) {
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "unknown agent id"));
+      return;
+    }
+    const workspaceDir = resolveAgentWorkspaceDir(cfg, agentId);
+    const rawPath = typeof params.path === "string" ? params.path.trim() : "";
+    const pathParam = rawPath && rawPath !== "." && rawPath !== "./" ? rawPath : "";
+    let resolved: ResolvedAgentWorkspaceDirPath;
+    try {
+      resolved = await resolveAgentWorkspaceDirPath({
+        workspaceDir,
+        name: pathParam,
+        allowMissing: false,
+      });
+    } catch (err) {
+      respond(
+        false,
+        undefined,
+        errorShape(
+          ErrorCodes.INVALID_REQUEST,
+          `failed to read workspace path "${pathParam || "."}": ${String(err)}`,
+        ),
+      );
+      return;
+    }
+    if (resolved.kind === "invalid") {
+      respond(
+        false,
+        undefined,
+        errorShape(
+          ErrorCodes.INVALID_REQUEST,
+          `unsafe workspace directory "${pathParam || "."}" (${resolved.reason})`,
+        ),
+      );
+      return;
+    }
+    if (resolved.kind === "missing") {
+      respond(
+        false,
+        undefined,
+        errorShape(ErrorCodes.INVALID_REQUEST, `workspace directory not found`),
+      );
+      return;
+    }
+    let entries: Awaited<ReturnType<typeof listWorkspaceEntries>>;
+    try {
+      entries = await listWorkspaceEntries({ workspaceDir, resolvedDir: resolved });
+    } catch (err) {
+      respond(
+        false,
+        undefined,
+        errorShape(ErrorCodes.INVALID_REQUEST, `failed to list workspace: ${String(err)}`),
+      );
+      return;
+    }
+    respond(
+      true,
+      {
+        agentId,
+        workspace: workspaceDir,
+        path: resolved.relativePath,
+        entries,
       },
       undefined,
     );
