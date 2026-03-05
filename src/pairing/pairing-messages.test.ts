@@ -58,7 +58,13 @@ describe("buildPairingReply", () => {
 
   function expectProfileAwarePairingReply(testCase: (typeof pairingReplyCases)[number]) {
     const text = buildPairingReply(testCase);
-    expectPairingReplyText(text, testCase);
+    if (testCase.channel === "telegram") {
+      expect(text).toContain(testCase.idLine);
+      expect(text).toContain("OpenClaw: доступ к боту не настроен.");
+      expect(text).toContain(`Код подтверждения: ${testCase.code}`);
+    } else {
+      expectPairingReplyText(text, testCase);
+    }
     expectPairingApproveCommand(text, testCase);
   }
 

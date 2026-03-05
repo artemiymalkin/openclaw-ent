@@ -492,8 +492,10 @@ describe("createTelegramBot", () => {
         expect(sendMessageSpy.mock.calls[0]?.[0], testCase.name).toBe(1234);
         const pairingText = String(sendMessageSpy.mock.calls[0]?.[1]);
         expect(pairingText, testCase.name).toContain(`Your Telegram user id: ${senderId}`);
-        expect(pairingText, testCase.name).toContain("Pairing code:");
+        expect(pairingText, testCase.name).toContain("Код подтверждения:");
+        expect(pairingText, testCase.name).toContain("PAIRCODE");
         expect(pairingText, testCase.name).toContain("openclaw pairing approve telegram");
+        expect(pairingText, testCase.name).not.toContain("<pre><code>");
         expect(sendMessageSpy.mock.calls[0]?.[2], testCase.name).toEqual(
           expect.objectContaining({ parse_mode: "HTML" }),
         );
@@ -578,8 +580,10 @@ describe("createTelegramBot", () => {
         expect(fetchSpy).not.toHaveBeenCalled();
         expect(sendMessageSpy).toHaveBeenCalledTimes(1);
         const pairingText = String(sendMessageSpy.mock.calls[0]?.[1]);
-        expect(pairingText).toContain("Pairing code:");
-        expect(pairingText).toContain("<pre><code>");
+        expect(pairingText).toContain("Код подтверждения:");
+        expect(pairingText).toContain("PAIRME12");
+        expect(pairingText).toContain("openclaw pairing approve telegram PAIRME12");
+        expect(pairingText).not.toContain("<pre><code>");
         expect(sendMessageSpy.mock.calls[0]?.[2]).toEqual(
           expect.objectContaining({ parse_mode: "HTML" }),
         );
@@ -670,8 +674,10 @@ describe("createTelegramBot", () => {
         expect(fetchSpy).not.toHaveBeenCalled();
         expect(sendMessageSpy).toHaveBeenCalledTimes(1);
         const pairingText = String(sendMessageSpy.mock.calls[0]?.[1]);
-        expect(pairingText).toContain("Pairing code:");
-        expect(pairingText).toContain("<pre><code>");
+        expect(pairingText).toContain("Код подтверждения:");
+        expect(pairingText).toContain("PAIRME12");
+        expect(pairingText).toContain("openclaw pairing approve telegram PAIRME12");
+        expect(pairingText).not.toContain("<pre><code>");
         expect(sendMessageSpy.mock.calls[0]?.[2]).toEqual(
           expect.objectContaining({ parse_mode: "HTML" }),
         );
