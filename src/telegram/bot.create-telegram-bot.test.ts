@@ -332,7 +332,7 @@ describe("createTelegramBot", () => {
         expect(sendMessageSpy.mock.calls[0]?.[0], testCase.name).toBe(1234);
         const pairingText = String(sendMessageSpy.mock.calls[0]?.[1]);
         expect(pairingText, testCase.name).toContain("Your Telegram user id: 999");
-        expect(pairingText, testCase.name).toContain("Pairing code:");
+        expect(pairingText, testCase.name).toContain("Код подтверждения:");
         expect(pairingText, testCase.name).toContain("PAIRME12");
         expect(pairingText, testCase.name).toContain("openclaw pairing approve telegram PAIRME12");
         expect(pairingText, testCase.name).not.toContain("<code>");
@@ -376,7 +376,7 @@ describe("createTelegramBot", () => {
       expect(getFileSpy).not.toHaveBeenCalled();
       expect(fetchSpy).not.toHaveBeenCalled();
       expect(sendMessageSpy).toHaveBeenCalledTimes(1);
-      expect(String(sendMessageSpy.mock.calls[0]?.[1])).toContain("Pairing code:");
+      expect(String(sendMessageSpy.mock.calls[0]?.[1])).toContain("Код подтверждения:");
       expect(replySpy).not.toHaveBeenCalled();
     } finally {
       fetchSpy.mockRestore();
@@ -460,7 +460,7 @@ describe("createTelegramBot", () => {
       expect(getFileSpy).not.toHaveBeenCalled();
       expect(fetchSpy).not.toHaveBeenCalled();
       expect(sendMessageSpy).toHaveBeenCalledTimes(1);
-      expect(String(sendMessageSpy.mock.calls[0]?.[1])).toContain("Pairing code:");
+      expect(String(sendMessageSpy.mock.calls[0]?.[1])).toContain("Код подтверждения:");
       expect(replySpy).not.toHaveBeenCalled();
     } finally {
       fetchSpy.mockRestore();
