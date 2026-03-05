@@ -51,7 +51,12 @@ describe("buildPairingReply", () => {
     it(`formats pairing reply for ${testCase.channel}`, () => {
       const text = buildPairingReply(testCase);
       expect(text).toContain(testCase.idLine);
-      expect(text).toContain(`Pairing code: ${testCase.code}`);
+      if (testCase.channel === "telegram") {
+        expect(text).toContain(`Код подтверждения: ${testCase.code}`);
+        expect(text).toContain("доступ к боту не настроен");
+      } else {
+        expect(text).toContain(`Pairing code: ${testCase.code}`);
+      }
       // CLI commands should respect OPENCLAW_PROFILE when set (most tests run with isolated profile)
       const commandRe = new RegExp(
         `(?:openclaw|openclaw) --profile isolated pairing approve ${testCase.channel} ${testCase.code}`,
