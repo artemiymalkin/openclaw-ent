@@ -112,18 +112,6 @@ export const AgentsFileEntrySchema = Type.Object(
   { additionalProperties: false },
 );
 
-export const AgentsWorkspaceEntrySchema = Type.Object(
-  {
-    name: NonEmptyString,
-    relativePath: NonEmptyString,
-    path: NonEmptyString,
-    type: Type.Union([Type.Literal("file"), Type.Literal("directory")]),
-    size: Type.Optional(Type.Integer({ minimum: 0 })),
-    updatedAtMs: Type.Optional(Type.Integer({ minimum: 0 })),
-  },
-  { additionalProperties: false },
-);
-
 export const AgentsFilesListParamsSchema = Type.Object(
   {
     agentId: NonEmptyString,
@@ -172,24 +160,6 @@ export const AgentsFilesSetResultSchema = Type.Object(
     agentId: NonEmptyString,
     workspace: NonEmptyString,
     file: AgentsFileEntrySchema,
-  },
-  { additionalProperties: false },
-);
-
-export const AgentsWorkspaceListParamsSchema = Type.Object(
-  {
-    agentId: NonEmptyString,
-    path: Type.Optional(Type.String()),
-  },
-  { additionalProperties: false },
-);
-
-export const AgentsWorkspaceListResultSchema = Type.Object(
-  {
-    agentId: NonEmptyString,
-    workspace: NonEmptyString,
-    path: Type.String(),
-    entries: Type.Array(AgentsWorkspaceEntrySchema),
   },
   { additionalProperties: false },
 );

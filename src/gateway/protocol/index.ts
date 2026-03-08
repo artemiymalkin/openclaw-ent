@@ -12,8 +12,6 @@ import {
   AgentSummarySchema,
   type AgentsFileEntry,
   AgentsFileEntrySchema,
-  type AgentsWorkspaceEntry,
-  AgentsWorkspaceEntrySchema,
   type AgentsCreateParams,
   AgentsCreateParamsSchema,
   type AgentsCreateResult,
@@ -38,10 +36,6 @@ import {
   AgentsFilesSetParamsSchema,
   type AgentsFilesSetResult,
   AgentsFilesSetResultSchema,
-  type AgentsWorkspaceListParams,
-  AgentsWorkspaceListParamsSchema,
-  type AgentsWorkspaceListResult,
-  AgentsWorkspaceListResultSchema,
   type AgentsListParams,
   AgentsListParamsSchema,
   type AgentsListResult,
@@ -268,9 +262,6 @@ export const validateAgentsFilesGetParams = ajv.compile<AgentsFilesGetParams>(
 export const validateAgentsFilesSetParams = ajv.compile<AgentsFilesSetParams>(
   AgentsFilesSetParamsSchema,
 );
-export const validateAgentsWorkspaceListParams = ajv.compile<AgentsWorkspaceListParams>(
-  AgentsWorkspaceListParamsSchema,
-);
 export const validateNodePairRequestParams = ajv.compile<NodePairRequestParams>(
   NodePairRequestParamsSchema,
 );
@@ -484,7 +475,6 @@ export {
   WebLoginWaitParamsSchema,
   AgentSummarySchema,
   AgentsFileEntrySchema,
-  AgentsWorkspaceEntrySchema,
   AgentsCreateParamsSchema,
   AgentsCreateResultSchema,
   AgentsUpdateParamsSchema,
@@ -497,8 +487,6 @@ export {
   AgentsFilesGetResultSchema,
   AgentsFilesSetParamsSchema,
   AgentsFilesSetResultSchema,
-  AgentsWorkspaceListParamsSchema,
-  AgentsWorkspaceListResultSchema,
   AgentsListParamsSchema,
   AgentsListResultSchema,
   ModelsListParamsSchema,
@@ -577,7 +565,6 @@ export type {
   WebLoginWaitParams,
   AgentSummary,
   AgentsFileEntry,
-  AgentsWorkspaceEntry,
   AgentsCreateParams,
   AgentsCreateResult,
   AgentsUpdateParams,
@@ -590,8 +577,6 @@ export type {
   AgentsFilesGetResult,
   AgentsFilesSetParams,
   AgentsFilesSetResult,
-  AgentsWorkspaceListParams,
-  AgentsWorkspaceListResult,
   AgentsListParams,
   AgentsListResult,
   SkillsStatusParams,
